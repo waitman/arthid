@@ -1,0 +1,54 @@
+
+hid_sppd example
+
+to build:
+
+# make
+
+to clean:
+
+# make clean
+
+to run:
+
+./hid_sppd
+
+
+# btsockstat
+Active raw HCI sockets
+Socket   PCB      Flags  Recv-Q Send-Q Local address   
+fffff8003ed612e8 fffff801b62ed580 000002      0      0 *               
+Active L2CAP sockets
+PCB      	     Recv-Q Send-Q Local address/PSM   Foreign address   CID   State
+fffff80008bc5400      0      0 *                /19    *                 0     LISTEN
+fffff801e299c900      0      0 *                /17    *                 0     LISTEN
+fffff801b66f5600      0      0 *                /1     *                 0     LISTEN
+fffff8000a207800      0      0 *                /3     *                 0     LISTEN
+Active RFCOMM sessions
+L2PCB    PCB      Flag MTU   Out-Q DLCs State
+fffff8000a207800 fffff80008c9ed00 0    667   0     No   LISTEN
+
+
+# sdpcontrol -l browse
+
+Record Handle: 00000000
+Service Class ID List:
+        Service Discovery Server (0x1000)
+Protocol Descriptor List:
+        L2CAP (0x0100)
+        SDP (0x0001)
+Bluetooth Profile Descriptor List:
+        Service Discovery Server (0x1000) ver. 1.0
+
+Record Handle: 0x00000001
+Service Class ID List:
+        Browse Group Descriptor (0x1001)
+
+Record Handle: 0x00000011
+Service Class ID List:
+        Human Interface Device (0x1124)
+Protocol Descriptor List:
+        L2CAP (0x0100)
+Bluetooth Profile Descriptor List:
+        Human Interface Device (0x1124) ver. 1.0
+
