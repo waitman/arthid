@@ -104,17 +104,27 @@ retkey(char press)
 	case	0x08:	++u; 	/*backspace*/
 	case	0x1B:	++u; 	/*escape*/
 	case	0x0A:	++u; 	/*newline = enter*/
+	case	')':		/* special chars need SHIFT otherwise it's the same key, ie shift-0 */
 	case	'0':	++u;
+	case	'(':
 	case	'9':	++u;
+	case 	'*':
 	case	'8':	++u;
+	case	'&':
 	case	'7':	++u;
+	case 	'^':
 	case	'6':	++u;
+	case	'%':
 	case	'5':	++u;
+	case	'$':
 	case	'4':	++u;
+	case	'#':
 	case	'3':	++u;
+	case	'@':
 	case	'2':	++u;
+	case	'!':
 	case	'1':	++u;
-	case	'z':
+	case	'z':		/* uppercase need SHIFT otherwise it's the same key */
 	case	'Z':	++u;
 	case	'y':
 	case	'Y':	++u;
@@ -175,6 +185,16 @@ shiftkey(char press)
 {
   switch (press)
   {
+	case	')':
+	case	'(':
+	case 	'*':
+	case	'&':
+	case 	'^':
+	case	'%':
+	case	'$':
+	case	'#':
+	case	'@':
+	case	'!':
 	case 	':':
 	case	']':
 	case 	'[':
@@ -391,17 +411,18 @@ client_kbd(int controlsock, int intrsock)
 	 * not opening psm 17/19 channels. initially i thought it was because handshake 
 	 * wasn't happening. working on solution */
 	
-	char handshake[2] = {0x0,0x0};
+	//char handshake[2] = {0x0,0x0};
 	
 	
 	clilen = sizeof(cli_addr);
 	controlsockfd = accept(controlsock, (struct sockaddr *) &cli_addr, &clilen);
 	//while ((bytes = read(controlsockfd, buffer, 300)) > 0) {}
 		
-	if (send ( controlsockfd, &handshake, 2, MSG_NOSIGNAL ) < 0) /* handshake */
+	/*if (send ( controlsockfd, &handshake, 2, MSG_NOSIGNAL ) < 0) 
 	{
 		goto SHUTDOWN;
 	}
+	*/
 	/* open interrupt connection */
 	intrsockfd = accept(intrsock, (struct sockaddr *) &cli_addr, &clilen);	
 

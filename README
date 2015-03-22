@@ -87,6 +87,10 @@ Some examples of sending characters to client:
 
 # printf "22;222\t33 33\t44.444AabcdE\nEEeeeX " >> /tmp/fifotmp
 
+single quotes
+
+# printf '22;2 @XZ!&*()::_+ 22\t33 33\t44.444$$#^&*()AabcdE\nEEeeeX ' >> /tmp/fifotmp
+
 Note that if you use 'printf' then add an extra trailing space.
 
 
