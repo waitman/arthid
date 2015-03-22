@@ -385,7 +385,11 @@ client_kbd(int controlsock, int intrsock)
 	struct sockaddr_l2cap		cli_addr;
 	char sfifo[300];
 	//int bytes;
-	//schar buffer[300];
+	//char buffer[300];
+	
+	/* handshake in progress - not 100% - some connected devices are querying psm 1 and 
+	 * not opening psm 17/19 channels. initially i thought it was because handshake 
+	 * wasn't happening. working on solution */
 	
 	char handshake[2] = {0x0,0x0};
 	
