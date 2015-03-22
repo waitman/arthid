@@ -1,4 +1,4 @@
-hid_sppd 
+arthid 
 
 Waitman Gobble <ns@waitman.net>
 
@@ -24,7 +24,7 @@ to deinstall:
 
 to run:
 
-hid_sppd
+arthid
 
 This program will start a daemon process which opens L2cap socket connections on PSM 17 and 19
 
@@ -75,7 +75,7 @@ You can specify PID File, FIFO buffer file and keystroke delay.
 
 Keystroke delay is specified in milliseconds.
 
-# hid_sppd -P /var/run/boo.pid -F /tmp/fifotmp -d 50
+# arthid -P /var/run/boo.pid -F /tmp/fifotmp -d 50
 
 
 
@@ -103,14 +103,14 @@ To shut down the daemon:
 
 Example Log File:
 
-Mar 22 09:58:54 afia hid_sppd: Using PID File /var/run/boo.pid
-Mar 22 09:58:54 afia hid_sppd: Using FIFO Buffer /tmp/fifotmp
-Mar 22 09:58:54 afia hid_sppd: Setting Keystroke Delay 50000 microseconds
-Mar 22 09:58:54 afia hid_sppd: Starting
-Mar 22 09:59:12 afia hid_sppd: Client Connected 00:10:60:af:5b:af
-Mar 22 09:59:42 afia hid_sppd: HUP - Closing Client Connections
-Mar 22 09:59:55 afia hid_sppd: Client Connected 00:10:60:af:5b:af
-Mar 22 10:01:13 afia hid_sppd: Shutting Down
+Mar 22 09:58:54 afia arthid: Using PID File /var/run/boo.pid
+Mar 22 09:58:54 afia arthid: Using FIFO Buffer /tmp/fifotmp
+Mar 22 09:58:54 afia arthid: Setting Keystroke Delay 50000 microseconds
+Mar 22 09:58:54 afia arthid: Starting
+Mar 22 09:59:12 afia arthid: Client Connected 00:10:60:af:5b:af
+Mar 22 09:59:42 afia arthid: HUP - Closing Client Connections
+Mar 22 09:59:55 afia arthid: Client Connected 00:10:60:af:5b:af
+Mar 22 10:01:13 afia arthid: Shutting Down
 
 
 

@@ -1,5 +1,5 @@
 /*
- * hid_sppd.c
+ * arthid.c
  */
 
 /*-
@@ -54,7 +54,7 @@
 #include <sys/queue.h>
 
 #define FIFO_NAME 		"/tmp/ain"
-#define HID_SPPD_PID		"/var/run/hid_sppd.pid"
+#define ARTHID_PID		"/var/run/arthid.pid"
 #define	REPORTID_KEYBD		1
 
 int controlsockfd,intrsockfd,is_connected,key_delay;
@@ -266,7 +266,7 @@ main(int argc, char *argv[])
 	{
 		pfh = pidfile_open(pidfile, 0600, &mypid);
 	} else {
-		pfh = pidfile_open(HID_SPPD_PID, 0600, &mypid);
+		pfh = pidfile_open(ARTHID_PID, 0600, &mypid);
 	}
 	if	(pfh ==	NULL) {
 		if	(errno == EEXIST)
@@ -384,9 +384,21 @@ client_kbd(int controlsock, int intrsock)
 	int 				clilen,i,numfifo,fdfifo;	
 	struct sockaddr_l2cap		cli_addr;
 	char sfifo[300];
+	//int bytes;
+	//schar buffer[300];
+	
+	char handshake[2] = {0x0,0x0};
+	
 	
 	clilen = sizeof(cli_addr);
 	controlsockfd = accept(controlsock, (struct sockaddr *) &cli_addr, &clilen);
+	//while ((bytes = read(controlsockfd, buffer, 300)) > 0) {}
+		
+	if (send ( controlsockfd, &handshake, 2, MSG_NOSIGNAL ) < 0) /* handshake */
+	{
+		goto SHUTDOWN;
+	}
+	/* open interrupt connection */
 	intrsockfd = accept(intrsock, (struct sockaddr *) &cli_addr, &clilen);	
 
 	is_connected=1;
@@ -477,9 +489,9 @@ static void
 usage(void)
 {
 	fprintf(stdout,
-"Usage: hid_sppd options\n" \
+"Usage: arthid options\n" \
 "Where options are:\n" \
-"\t-P        PID File (default /var/run/hid_sppd.pid)\n" \
+"\t-P        PID File (default /var/run/arthid.pid)\n" \
 "\t-F        FIFO buffer (default /tmp/ain)\n" \
 "\t-d        Keystroke delay in milliseconds (default 10ms)\n" \
 "\t-h         Display this message\n");
