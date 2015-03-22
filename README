@@ -3,6 +3,8 @@ hid_sppd
 Waitman Gobble <ns@waitman.net>
 
 
+Note: Before installing update the Makefile with PREFIX, etc.
+
 
 to build:
 
