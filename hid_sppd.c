@@ -32,6 +32,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/param.h>
 #include <bluetooth.h>
 #include <ctype.h>
 #include <err.h>
@@ -52,11 +53,17 @@
 #include <libutil.h>
 #include <sys/queue.h>
 
-#define SPPD_IDENT		"hid_sppd"
-#define SPPD_BUFFER_SIZE	1024
-#define max(a, b)		(((a) > (b))? (a) : (b))
 #define FIFO_NAME 		"/tmp/ain"
+#define HID_SPPD_PID		"/var/run/hid_sppd.pid"
 #define	REPORTID_KEYBD		1
+
+int controlsockfd,intrsockfd,is_connected,key_delay;
+struct pidfh *pfh;
+char fifo_name[_POSIX_PATH_MAX];
+
+void client_kbd(int controlsock, int intrsock);
+void handle_signal(int signal);
+static void usage(void);
 
 struct hidrep_keyb_t
 {
@@ -71,45 +78,94 @@ char
 retkey(char press)
 {
   char u = 1;
+//  syslog(LOG_ERR,"Press %d",press);
   switch (press)
   {
-	  case	'-':	++u; //Return=> code 40 ENTER
-	  case	'0':	++u;
-	  case	'9':	++u;
-	  case	'8':	++u;
-	  case	'7':	++u;
-	  case	'6':	++u;
-	  case	'5':	++u;
-	  case	'4':	++u;
-	  case	'3':	++u;
-	  case	'2':	++u;
-	  case	'1':	++u;
-	  case	'Z':	++u;
-	  case	'Y':	++u;
-	  case	'X':	++u;
-	  case	'W':	++u;
-	  case	'V':	++u;
-	  case	'U':	++u;
-	  case	'T':	++u;
-	  case	'S':	++u;
-	  case	'R':	++u;
-	  case	'Q':	++u;
-	  case	'P':	++u;
-	  case	'O':	++u;
-	  case	'N':	++u;
-	  case	'M':	++u;
-	  case	'L':	++u;
-	  case	'K':	++u;
-	  case	'J':	++u;
-	  case	'I':	++u;
-	  case	'H':	++u;
-	  case	'G':	++u;
-	  case	'F':	++u;
-	  case	'E':	++u;
-	  case	'D':	++u;
-	  case	'C':	++u;
-	  case	'B':	++u;
-	  case	'A':	u +=3;	// A =>  4
+ 
+	case	0x2F:	++u; 	/*/*/
+	case	0x2E:	++u; 	
+	case	',':	++u; 	
+	case	0x60:	++u; 	/*`*/
+	case	0x27:	++u; 	/*'*/
+	case 	':':		/*need shift*/
+	case	';':	++u; 	
+			++u; 	/*bonus #102 key not implemented*/
+	case	0x5C:	++u; 	/*\*/
+	case	']':		/*need shift*/
+	case	'}':	++u; 	
+	case 	'[':		/*need shift*/
+	case	'{':	++u; 	
+	case 	'+':		/*need shift*/
+	case	'=':	++u; 	
+	case 	'_':		/*need shift*/
+	case	'-':	++u; 	/*-*/
+	case	' ':	++u; 	/*space*/
+	case	0x09:	++u; 	/*tab*/
+	case	0x08:	++u; 	/*backspace*/
+	case	0x1B:	++u; 	/*escape*/
+	case	0x0A:	++u; 	/*newline = enter*/
+	case	'0':	++u;
+	case	'9':	++u;
+	case	'8':	++u;
+	case	'7':	++u;
+	case	'6':	++u;
+	case	'5':	++u;
+	case	'4':	++u;
+	case	'3':	++u;
+	case	'2':	++u;
+	case	'1':	++u;
+	case	'z':
+	case	'Z':	++u;
+	case	'y':
+	case	'Y':	++u;
+	case	'x':
+	case	'X':	++u;
+	case	'w':
+	case	'W':	++u;
+	case	'v':
+	case	'V':	++u;
+	case	'u':
+	case	'U':	++u;
+	case	't':
+	case	'T':	++u;
+	case	's':
+	case	'S':	++u;
+	case	'r':
+	case	'R':	++u;
+	case	'q':
+	case	'Q':	++u;
+	case	'p':
+	case	'P':	++u;
+	case	'o':
+	case	'O':	++u;
+	case	'n':
+	case	'N':	++u;
+	case	'm':
+	case	'M':	++u;
+	case	'l':
+	case	'L':	++u;
+	case	'k':
+	case	'K':	++u;
+	case	'j':
+	case	'J':	++u;
+	case	'i':
+	case	'I':	++u;
+	case	'h':
+	case	'H':	++u;
+	case	'g':
+	case	'G':	++u;
+	case	'f':
+	case	'F':	++u;
+	case	'e':
+	case	'E':	++u;
+	case	'd':
+	case	'D':	++u;
+	case	'c':
+	case	'C':	++u;
+	case	'b':
+	case	'B':	++u;
+	case	'a':
+	case	'A':	u +=3;	// A =>  4
   }
   return (u);
 }
@@ -119,32 +175,37 @@ shiftkey(char press)
 {
   switch (press)
   {
-	  case	'Z':	
-	  case	'Y':	
-	  case	'X':	
-	  case	'W':	
-	  case	'V':	
-	  case	'U':	
-	  case	'T':	
-	  case	'S':	
-	  case	'R':	
-	  case	'Q':	
-	  case	'P':	
-	  case	'O':	
-	  case	'N':	
-	  case	'M':	
-	  case	'L':	
-	  case	'K':	
-	  case	'J':	
-	  case	'I':	
-	  case	'H':	
-	  case	'G':	
-	  case	'F':	
-	  case	'E':	
-	  case	'D':	
-	  case	'C':	
-	  case	'B':	
-	  case	'A':	
+	case 	':':
+	case	']':
+	case 	'[':
+	case 	'+':
+	case 	'_':
+	case	'Z':	
+	case	'Y':	
+	case	'X':	
+	case	'W':	
+	case	'V':	
+	case	'U':	
+	case	'T':	
+	case	'S':	
+	case	'R':	
+	case	'Q':	
+	case	'P':	
+	case	'O':	
+	case	'N':	
+	case	'M':	
+	case	'L':	
+	case	'K':	
+	case	'J':	
+	case	'I':	
+	case	'H':	
+	case	'G':	
+	case	'F':	
+	case	'E':	
+	case	'D':	
+	case	'C':	
+	case	'B':	
+	case	'A':	
 	      return (0x2);
 	      break;
 	  default:
@@ -159,12 +220,80 @@ main(int argc, char *argv[])
 {
 	
 	int			 channel;
-	int			 controlsock,intrsock,clilen,controlsockfd,intrsockfd;
+	int			 controlsock,intrsock;
 	bdaddr_t		 bt_addr_any;
 	sdp_sp_profile_t	 sp;
 	void			*ss;
 	uint32_t		 sdp_handle;
+	struct sigaction	 sa;
+	int			custom_pid=0;
+	char			*pidfile;
+	is_connected=0;
+	key_delay=10000; /* 10 ms default */
 
+	
+	int32_t			 opt;
+
+	strncpy ( fifo_name, FIFO_NAME, sizeof(fifo_name) );
+	
+	while ((opt = getopt(argc, argv, "P:d:F:h")) != -1) {
+		switch (opt) {
+		case 'P': /* set pid file */
+			pidfile = optarg;
+			syslog(LOG_ERR,"Using PID File %s", pidfile);
+			custom_pid = 1;
+			break;
+
+		case 'd': /* delay between keystrokes in milliseconds */
+			key_delay = atoi(optarg) * 1000;
+			syslog(LOG_ERR,"Setting Keystroke Delay %d microseconds",key_delay); 
+			break;
+
+		case 'F': /* FIFO buffer */
+			strncpy ( fifo_name, optarg, sizeof(fifo_name) );
+			syslog(LOG_ERR,"Using FIFO Buffer %s",fifo_name);
+			break;
+			
+		case 'h': /* help me */
+			usage();
+			break;
+		}
+	}
+
+	
+	pid_t mypid;
+	if (custom_pid)
+	{
+		pfh = pidfile_open(pidfile, 0600, &mypid);
+	} else {
+		pfh = pidfile_open(HID_SPPD_PID, 0600, &mypid);
+	}
+	if	(pfh ==	NULL) {
+		if	(errno == EEXIST)
+			errx(EXIT_FAILURE,	"Daemon	already	running, pid: %d.", mypid);
+		warn("Cannot open or create pidfile");
+	}
+
+
+	/* Set signal handlers */
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = handle_signal;
+
+	if (sigaction(SIGTERM, &sa, NULL) < 0)
+		err(1, "Could not sigaction(SIGTERM)");
+ 
+	if (sigaction(SIGHUP, &sa, NULL) < 0)		/* SIGHUP will disconnect client and wait for new connections */
+		err(1, "Could not sigaction(SIGHUP)");
+ 
+	if (sigaction(SIGINT, &sa, NULL) < 0)
+		err(1, "Could not sigaction(SIGINT)");
+
+	sa.sa_handler = SIG_IGN;
+	sa.sa_flags = SA_NOCLDWAIT;
+
+	if (sigaction(SIGCHLD, &sa, NULL) < 0)
+		err(1, "Could not sigaction(SIGCHLD)");
+	
 	memcpy(&bt_addr_any, NG_HCI_BDADDR_ANY, sizeof(bt_addr_any));
 
 	channel = 17;
@@ -188,7 +317,7 @@ main(int argc, char *argv[])
 
 
 	/* Create interrupt socket */
-	struct sockaddr_l2cap	l2addr, cli_addr;
+	struct sockaddr_l2cap	l2addr;
 
 	controlsock = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BLUETOOTH_PROTO_L2CAP);
 	
@@ -210,8 +339,6 @@ main(int argc, char *argv[])
 		return (-1);
 	}
 
-	printf("control socket created\n");
-	
 	/* Create interrupt socket */
 	intrsock = socket(AF_BLUETOOTH, SOCK_SEQPACKET, BLUETOOTH_PROTO_L2CAP);
 
@@ -229,73 +356,132 @@ main(int argc, char *argv[])
 		return (-1);
 	}
 
-	printf("interrupt socket created\n");
-	printf("waiting for connect\n");
+	mknod(fifo_name, S_IFIFO | 0666, 0);
+	
+	if (daemon(0, 0) == -1)
+	{
+	     warn("Cannot daemonize");
+	     pidfile_remove(pfh);
+	     exit(EXIT_FAILURE);
+	}
+	
+	pidfile_write(pfh);
+	syslog(LOG_ERR,"Starting");
+	
+	while (1==1)				/* forever accept clients (one at a time) */
+	{
+		client_kbd(controlsock,intrsock);
+	}
+
+	return (0);
+}
+
+
+void 
+client_kbd(int controlsock, int intrsock)
+{
+
+	int 				clilen,i,numfifo,fdfifo;	
+	struct sockaddr_l2cap		cli_addr;
+	char sfifo[300];
 	
 	clilen = sizeof(cli_addr);
 	controlsockfd = accept(controlsock, (struct sockaddr *) &cli_addr, &clilen);
 	intrsockfd = accept(intrsock, (struct sockaddr *) &cli_addr, &clilen);	
 
-	printf("Connected to %s\n",bt_ntoa(&cli_addr.l2cap_bdaddr, NULL));
-	printf("waiting for fifo.. press Control-C to exit.\n");
-	fflush(stdout);
-	
-	char sfifo[300];
-	int numfifo, fdfifo, i;
-	mknod(FIFO_NAME, S_IFIFO | 0666, 0);
-	
+	is_connected=1;
 	char	hidrep[32];
 	struct hidrep_keyb_t  * vkeyb  = (void *)hidrep;
-	
-	/* empty struct for key release */
-	struct hidrep_keyb_t  * releasekey  = (void *)hidrep;
-	releasekey->btcode = 0xA1;
-	releasekey->rep_id = REPORTID_KEYBD;
-	releasekey->modify = 0x00;
-	releasekey->pad = 0x00;
-	releasekey->key[0] = 0x00;
-	releasekey->key[1] = 0x00;
-	releasekey->key[2] = 0x00;
-	releasekey->key[3] = 0x00;
-	releasekey->key[4] = 0x00;
-	releasekey->key[5] = 0x00;
+
+	syslog(LOG_ERR,"Client Connected %s",bt_ntoa(&cli_addr.l2cap_bdaddr, NULL));
 	
 	while (1==1) {
-	  fdfifo = open(FIFO_NAME, O_RDONLY);
-      do {
-        if ((numfifo = read(fdfifo, sfifo, 300)) == -1)
-	{
-            /* oh no */
-	} else {
-            sfifo[numfifo] = '\0';
-            for (i=0;i<numfifo-1;i++)
-	    {
-	      vkeyb->btcode = 0xA1;
-	      vkeyb->rep_id = REPORTID_KEYBD;
-	      vkeyb->modify = shiftkey(sfifo[i]);
-	      vkeyb->pad = 0x00;
-	      vkeyb->key[0] = retkey(sfifo[i]); /* key press */
-	      vkeyb->key[1] = 0x00;
-	      vkeyb->key[2] = 0x00;
-	      vkeyb->key[3] = 0x00;
-	      vkeyb->key[4] = 0x00;
-	      vkeyb->key[5] = 0x00;
-	      send ( intrsockfd, vkeyb,sizeof(struct hidrep_keyb_t), MSG_NOSIGNAL );
-	      printf("sent data %d %lu\n",vkeyb->key[0],sizeof(struct hidrep_keyb_t));
-	      send ( intrsockfd, releasekey,sizeof(struct hidrep_keyb_t), MSG_NOSIGNAL );
-	      printf("sent release\n");
-	      
-	      fflush(stdout);
-	    }
-        }
-      } while (numfifo>0);
-	close(fdfifo);
-	send ( intrsockfd, releasekey,sizeof(struct hidrep_keyb_t), MSG_NOSIGNAL );
-	      printf("sent release\n");
+		fdfifo = open(fifo_name, O_RDONLY);
+		do {
+			if (!is_connected) {
+				goto SHUTDOWN;
+			}
+			if ((numfifo = read(fdfifo, sfifo, 300)) == -1)
+			{
+				goto SHUTDOWN;
+			} else {
+				sfifo[numfifo] = '\0';
+				for (i=0;i<numfifo-1;i++)
+				{
+					vkeyb->btcode = 0xA1;
+					vkeyb->rep_id = REPORTID_KEYBD;
+					vkeyb->modify = shiftkey(sfifo[i]);
+					vkeyb->pad = 0x00;
+					vkeyb->key[0] = retkey(sfifo[i]); /* key press */
+					vkeyb->key[1] = 0x00;
+					vkeyb->key[2] = 0x00;
+					vkeyb->key[3] = 0x00;
+					vkeyb->key[4] = 0x00;
+					vkeyb->key[5] = 0x00;
+					if (send ( intrsockfd, vkeyb,
+						sizeof(struct hidrep_keyb_t), MSG_NOSIGNAL ) < 0)
+					{
+						goto SHUTDOWN;
+					}
+					usleep(key_delay); 
+					
+					vkeyb->btcode = 0xA1;		/*release*/
+					vkeyb->rep_id = REPORTID_KEYBD;
+					vkeyb->modify = 0x00;
+					vkeyb->pad = 0x00;
+					vkeyb->key[0] = 0x00; 		/* key press */
+					vkeyb->key[1] = 0x00;
+					vkeyb->key[2] = 0x00;
+					vkeyb->key[3] = 0x00;
+					vkeyb->key[4] = 0x00;
+					vkeyb->key[5] = 0x00;
+					if (send ( intrsockfd, vkeyb,
+						sizeof(struct hidrep_keyb_t), MSG_NOSIGNAL ) < 0)
+					{
+						goto SHUTDOWN;
+					}
+					usleep(key_delay); 
+					
+				}
+			}
+		} while (numfifo>0);
+		if (!is_connected) {
+			goto SHUTDOWN;
+		}
+		close(fdfifo);
 	} /* forever */
-      
-      remove(FIFO_NAME);
-      return (0);
+SHUTDOWN:
+	close(fdfifo);
+	close(controlsockfd);
+	close(intrsockfd);
 }
 
+void 
+handle_signal(int signal) {
+    switch (signal) {
+        case SIGHUP:
+		is_connected=0;
+		syslog(LOG_ERR,"HUP - Closing Client Connections");
+		break;
+	case SIGTERM:
+        case SIGINT:
+		syslog(LOG_ERR,"Shutting Down");
+		remove(fifo_name);
+		pidfile_remove(pfh);
+		exit(EXIT_SUCCESS);
+    }
+}
 
+/* Display usage and exit */
+static void 
+usage(void)
+{
+	fprintf(stdout,
+"Usage: hid_sppd options\n" \
+"Where options are:\n" \
+"\t-P        PID File (default /var/run/hid_sppd.pid)\n" \
+"\t-F        FIFO buffer (default /tmp/ain)\n" \
+"\t-d        Keystroke delay in milliseconds (default 10ms)\n" \
+"\t-h         Display this message\n");
+	exit(EXIT_SUCCESS);
+}

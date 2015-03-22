@@ -1,5 +1,8 @@
+hid_sppd 
 
-hid_sppd example
+Waitman Gobble <ns@waitman.net>
+
+
 
 to build:
 
@@ -9,9 +12,21 @@ to clean:
 
 # make clean
 
+to install:
+
+# make install
+
+to deinstall:
+
+#make deinstall
+
 to run:
 
-./hid_sppd
+hid_sppd
+
+This program will start a daemon process which opens L2cap socket connections on PSM 17 and 19
+
+
 
 
 # btsockstat
@@ -51,4 +66,50 @@ Protocol Descriptor List:
         L2CAP (0x0100)
 Bluetooth Profile Descriptor List:
         Human Interface Device (0x1124) ver. 1.0
+
+
+
+You can specify PID File, FIFO buffer file and keystroke delay.
+
+Keystroke delay is specified in milliseconds.
+
+# hid_sppd -P /var/run/boo.pid -F /tmp/fifotmp -d 50
+
+
+
+
+Some examples of sending characters to client:
+
+
+# echo "222223333344444A" >> /tmp/fifotmp
+
+# printf "22;222\t33 33\t44.444AabcdE\nEEeeeX " >> /tmp/fifotmp
+
+Note that if you use 'printf' then add an extra trailing space.
+
+
+
+To disconnect clients:
+
+# pkill -HUP -F /var/run/boo.pid
+
+To shut down the daemon:
+
+# pkill -TERM -F /var/run/boo.pid
+
+
+
+Example Log File:
+
+Mar 22 09:58:54 afia hid_sppd: Using PID File /var/run/boo.pid
+Mar 22 09:58:54 afia hid_sppd: Using FIFO Buffer /tmp/fifotmp
+Mar 22 09:58:54 afia hid_sppd: Setting Keystroke Delay 50000 microseconds
+Mar 22 09:58:54 afia hid_sppd: Starting
+Mar 22 09:59:12 afia hid_sppd: Client Connected 00:10:60:af:5b:af
+Mar 22 09:59:42 afia hid_sppd: HUP - Closing Client Connections
+Mar 22 09:59:55 afia hid_sppd: Client Connected 00:10:60:af:5b:af
+Mar 22 10:01:13 afia hid_sppd: Shutting Down
+
+
+
 
