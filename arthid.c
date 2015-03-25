@@ -69,6 +69,17 @@ struct sdp_hid_profile
 typedef struct sdp_hid_profile        sdp_hid_profile_t;
 typedef struct sdp_hid_profile *      sdp_hid_profile_p;
 
+struct sdp_pnp_profile
+{
+	uint8_t		authority;		/* 0x1 or 0x2 */
+        uint16_t	vendor_id;
+        uint16_t	product_id;
+        uint16_t	product_version;
+	uint16_t	bt_version;
+};
+typedef struct sdp_pnp_profile        sdp_pnp_profile_t;
+typedef struct sdp_pnp_profile *      sdp_pnp_profile_p;
+
 
 int controlsockfd,intrsockfd,is_connected,key_delay;
 struct pidfh *pfh;
@@ -256,6 +267,7 @@ main(int argc, char *argv[])
 	int			 controlsock,intrsock;
 	bdaddr_t		 bt_addr_any;
 	sdp_hid_profile_t	 sp;
+	sdp_pnp_profile_t	pnp;
 	void			*ss;
 	uint32_t		 sdp_handle;
 	struct sigaction	 sa;
@@ -350,8 +362,15 @@ main(int argc, char *argv[])
 			    strerror(sdp_error(ss)), sdp_error(ss));
 		}
 	
+	memset(&pnp, 0, sizeof(pnp));
+	pnp.authority =		0x1; 		/* where your got your mfg number. 0x1 Bluetooth SIG, 0x2 USB  */
+	pnp.vendor_id =		0x05ac; 	/* your assigned vendor ID. this one for TEST only */
+	pnp.product_id =	0x0239;		/* your product ID. this one for TEST only */
+	pnp.product_version =	0x050;		/* your version. this one for TEST only */
+	pnp.bt_version = 	0x0102;		/* bt v1.2 example */
+
 	if (sdp_register_service(ss, SDP_SERVICE_CLASS_PNP_DEVICE,
-				&bt_addr_any, (void *)&sp, sizeof(sp),
+				&bt_addr_any, (void *)&pnp, sizeof(pnp),
 				&sdp_handle) != 0) {
 			errx(1, "Unable to register PNP service with "
 			    "local SDP daemon. %s (%d)",
