@@ -56,6 +56,19 @@
 #define FIFO_NAME 		"/tmp/ain"
 #define ARTHID_PID		"/var/run/arthid.pid"
 #define	REPORTID_KEYBD		1
+#define	SDP_SERVICE_CLASS_PNP_DEVICE	0x1200
+
+
+struct sdp_hid_profile
+{
+        uint8_t control_channel;
+	uint8_t interrupt_channel;
+//        uint8_t supported_formats_size;
+//        uint8_t supported_formats[30];
+};
+typedef struct sdp_hid_profile        sdp_hid_profile_t;
+typedef struct sdp_hid_profile *      sdp_hid_profile_p;
+
 
 int controlsockfd,intrsockfd,is_connected,key_delay;
 struct pidfh *pfh;
@@ -242,7 +255,7 @@ main(int argc, char *argv[])
 	int			 channel;
 	int			 controlsock,intrsock;
 	bdaddr_t		 bt_addr_any;
-	sdp_sp_profile_t	 sp;
+	sdp_hid_profile_t	 sp;
 	void			*ss;
 	uint32_t		 sdp_handle;
 	struct sigaction	 sa;
@@ -325,12 +338,22 @@ main(int argc, char *argv[])
 			errx(1, "Unable to open local SDP session. %s (%d)",
 			    strerror(sdp_error(ss)), sdp_error(ss));
 	memset(&sp, 0, sizeof(sp));
-	sp.server_channel = channel;
+	sp.control_channel = channel;
+	sp.interrupt_channel = channel+2;
+	
 
 	if (sdp_register_service(ss, SDP_SERVICE_CLASS_HUMAN_INTERFACE_DEVICE,
 				&bt_addr_any, (void *)&sp, sizeof(sp),
 				&sdp_handle) != 0) {
-			errx(1, "Unable to register LAN service with "
+			errx(1, "Unable to register HID service with "
+			    "local SDP daemon. %s (%d)",
+			    strerror(sdp_error(ss)), sdp_error(ss));
+		}
+	
+	if (sdp_register_service(ss, SDP_SERVICE_CLASS_PNP_DEVICE,
+				&bt_addr_any, (void *)&sp, sizeof(sp),
+				&sdp_handle) != 0) {
+			errx(1, "Unable to register PNP service with "
 			    "local SDP daemon. %s (%d)",
 			    strerror(sdp_error(ss)), sdp_error(ss));
 		}
